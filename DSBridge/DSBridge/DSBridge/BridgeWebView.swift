@@ -42,7 +42,7 @@ class BridgeWebView: WKWebView {
         
     }
     
-    func onMessage(_ msg: [String: Any]?, type: JSUtils.BridgeAPI) -> Any? {
-        return nil
+    func onMessage(_ msg: [String: Any]?, type: JSUtils.BridgeAPI) -> Any {
+        return NSObject()
     }
 }

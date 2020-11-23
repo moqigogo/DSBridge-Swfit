@@ -11,7 +11,23 @@ import UIKit
 class InternalApis: NSObject {
     weak var webView: BridgeWebView?
     
-    func hasNativeMethod(args: Any?) -> Any {
-        return webView?.onMessage(args as? [String: Any], type: .hasNativeMethod) as Any
+    func hasNativeMethod(args: [String: Any]?) -> Any {
+        return webView?.onMessage(args, type: .hasNativeMethod) as Any
+    }
+    
+    func closePage(args: [String: Any]?) -> Any {
+        return webView?.onMessage(args, type: .closePage) as Any
+    }
+    
+    func returnValue(args: [String: Any]?) -> Any {
+        return webView?.onMessage(args, type: .returnValue) as Any
+    }
+    
+    func dsinit(args: [String: Any]?) -> Any {
+        return webView?.onMessage(args, type: .dsinit) as Any
+    }
+    
+    func disableJavascriptDialogBlock(args: [String: Any]?) -> Any {
+        return webView?.onMessage(args, type: .disableSafetyAlertBox) as Any
     }
 }
