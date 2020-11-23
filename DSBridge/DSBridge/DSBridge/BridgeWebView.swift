@@ -258,11 +258,24 @@ extension BridgeWebView {
                     }
                     
                     // todo
-                    
+                    _ = JavascriptInterfaceObject.perform(selasyn, with: arg, with: completionHandler)
+                    break
                 }
+            } else if JavascriptInterfaceObject.responds(to: sel) {
+                let ret = JavascriptInterfaceObject.perform(sel, with: arg)
+                result["code"] = 0
+                if ret != nil {
+                    result["data"] = ret!.takeRetainedValue()
+                }
+                break
             }
+            var js = errorString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            if isDebug {
+                js = String(format: "window.alert(decodeURIComponent(\"%@\"));", js)
+                evaluateJavaScript(js, completionHandler: nil)
+            }
+            debugPrint(errorString)
         } while false
-        
         
         return JSUtils.objToJsonString(result)
     }
