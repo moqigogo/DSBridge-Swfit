@@ -28,8 +28,8 @@ class BridgeWebView: WKWebView {
     private var callID = 0
     private var isJsDialogBlock = true
     private var alertHandler: (()->Void)?
-    private var confirmHandler: (()->Bool)?
-    private var promptHandler: (()->String)?
+    private var confirmHandler: ((Bool) -> Void)?
+    private var promptHandler: ((String?) -> Void)?
     private var javascriptCloseWindowListener: (()->Void)?
     
     override init(frame: CGRect, configuration: WKWebViewConfiguration) {
@@ -76,10 +76,10 @@ class BridgeWebView: WKWebView {
     }
     
     func addJavascriptObject(_ object: Any?, namespace: String) {
-        guard let object = object as? AnyObject else {
+        guard let object = object else {
             return
         }
-        javaScriptNamespaceInterfaces[namespace] = object
+        javaScriptNamespaceInterfaces[namespace] = object as AnyObject
     }
     
     func removeJavascriptObject(_ namespace: String) {
@@ -136,14 +136,26 @@ extension BridgeWebView: WKUIDelegate {
         let prefix = "_dsbridge="
         if prompt.hasPrefix(prefix) {
             let method = (prompt as NSString).substring(from: prefix.count)
-            var result: String?
-            if isDebug {
-                
-            } else {
-                
-            }
+            let result = call(method, argStr: defaultText)
+            completionHandler(result)
         } else {
-            
+            if isJsDialogBlock == false {
+                completionHandler(nil)
+            }
+            if bridgeUIDelegate != nil {
+                bridgeUIDelegate?.webView?(webView,
+                                           runJavaScriptTextInputPanelWithPrompt: prompt,
+                                           defaultText: defaultText,
+                                           initiatedByFrame: frame,
+                                           completionHandler: completionHandler)
+                return
+            } else {
+                dialogType = 3
+                if isJsDialogBlock {
+                    promptHandler = completionHandler
+                }
+                // todo alert
+            }
         }
     }
     
@@ -151,57 +163,76 @@ extension BridgeWebView: WKUIDelegate {
                  runJavaScriptAlertPanelWithMessage message: String,
                  initiatedByFrame frame: WKFrameInfo,
                  completionHandler: @escaping () -> Void) {
-        
+        if isJsDialogBlock == false {
+            completionHandler()
+        }
+        if bridgeUIDelegate != nil {
+            bridgeUIDelegate?.webView?(webView,
+                                       runJavaScriptAlertPanelWithMessage: message,
+                                       initiatedByFrame: frame,
+                                       completionHandler: completionHandler)
+            return
+        } else {
+            dialogType = 1
+            if isJsDialogBlock {
+                alertHandler = completionHandler
+            }
+            // todo alert
+        }
     }
     
     func webView(_ webView: WKWebView,
                  runJavaScriptConfirmPanelWithMessage message: String,
                  initiatedByFrame frame: WKFrameInfo,
                  completionHandler: @escaping (Bool) -> Void) {
-        
+        if isJsDialogBlock == false {
+            completionHandler(true)
+        }
+        if bridgeUIDelegate != nil {
+            bridgeUIDelegate?.webView?(webView,
+                                       runJavaScriptConfirmPanelWithMessage: message,
+                                       initiatedByFrame: frame,
+                                       completionHandler: completionHandler)
+            return
+        } else {
+            dialogType = 2
+            if isJsDialogBlock {
+                confirmHandler = completionHandler
+            }
+            // todo alert
+        }
     }
     
     func webView(_ webView: WKWebView,
                  createWebViewWith configuration: WKWebViewConfiguration,
                  for navigationAction: WKNavigationAction,
                  windowFeatures: WKWindowFeatures) -> WKWebView? {
-        
-        return nil
+        return bridgeUIDelegate?.webView?(webView,
+                                          createWebViewWith: configuration,
+                                          for: navigationAction,
+                                          windowFeatures: windowFeatures)
     }
     
     func webViewDidClose(_ webView: WKWebView) {
-        
-    }
-    
-    func webView(_ webView: WKWebView,
-                 shouldPreviewElement elementInfo: WKPreviewElementInfo) -> Bool {
-        
-        return false
-    }
-    
-    func webView(_ webView: WKWebView,
-                 previewingViewControllerForElement elementInfo: WKPreviewElementInfo,
-                 defaultActions previewActions: [WKPreviewActionItem]) -> UIViewController? {
-        
-        return nil
-    }
-    
-    func webView(_ webView: WKWebView,
-                 commitPreviewingViewController previewingViewController: UIViewController) {
-        
+        bridgeUIDelegate?.webViewDidClose?(webView)
     }
 }
 
 extension BridgeWebView {
-    private func alertView(_ alertView: UIAlertView, clickedButtonAtIndex buttonIndex: Int) {
-        
-    }
-    
     private func evalJavascript(_ delay: Int) {
-        
+        DispatchQueue.main.asyncAfter(deadline: .now() + DispatchTimeInterval.seconds(delay)) {
+            objc_sync_enter(self)
+            if self.jsCache.count >= 0 {
+                self.evaluateJavaScript(self.jsCache, completionHandler: nil)
+                self.isPending = false
+                self.jsCache = ""
+                self.lastCallTime = Date().timeIntervalSince1970 * 100
+            }
+            objc_sync_exit(self)
+        }
     }
     
-    private func call(_ method: String, argStr: String) -> String {
+    private func call(_ method: String, argStr: String?) -> String {
         var result = ["code": -1, "data": ""] as [String : Any]
         let nameStrings = JSUtils.parseNamespace(method.trimmingCharacters(in: .whitespaces))
         guard let nameString = nameStrings.first as? String,
@@ -225,10 +256,10 @@ extension BridgeWebView {
             return JSUtils.objToJsonString(result)
         }
         
-        var cb: String = ""
+        let cb = args["_dscbstub"] as? String
         
         repeat {
-            if cb == args["_dscbstub"] as? String {
+            if cb != nil {
                 if JavascriptInterfaceObject.responds(to: selasyn) {
                     let completionHandler: (Any?, Bool)->() = { value, complete in
                         var del = ""
@@ -239,9 +270,9 @@ extension BridgeWebView {
                         var value1 = JSUtils.objToJsonString(result)
                         value1 = value1.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "{}"
                         if complete {
-                            del = "delete window." + cb
+                            del = "delete window." + cb!
                         }
-                        let js = String(format: "try {%@(JSON.parse(decodeURIComponent(\"%@\")).data);%@; } catch(e){};", cb, ((value as? String) ?? ""), del)
+                        let js = String(format: "try {%@(JSON.parse(decodeURIComponent(\"%@\")).data);%@; } catch(e){};", cb!, ((value as? String) ?? ""), del)
                         objc_sync_enter(self)
                         
                         let t = Date().timeIntervalSince1970 * 1000
