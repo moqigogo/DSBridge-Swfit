@@ -132,7 +132,6 @@ extension BridgeWebView: WKUIDelegate {
                  initiatedByFrame frame: WKFrameInfo,
                  completionHandler: @escaping (String?) -> Void) {
         
-        
         let prefix = "_dsbridge="
         if prompt.hasPrefix(prefix) {
             let method = (prompt as NSString).substring(from: prefix.count)
@@ -142,8 +141,11 @@ extension BridgeWebView: WKUIDelegate {
             if isJsDialogBlock == false {
                 completionHandler(nil)
             }
-            if bridgeUIDelegate != nil {
-                bridgeUIDelegate?.webView?(webView,
+
+            if let bridgeUIDelegate = bridgeUIDelegate,
+                bridgeUIDelegate.responds(to: #selector(webView(_:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:))) {
+                
+                bridgeUIDelegate.webView?(webView,
                                            runJavaScriptTextInputPanelWithPrompt: prompt,
                                            defaultText: defaultText,
                                            initiatedByFrame: frame,
@@ -155,6 +157,7 @@ extension BridgeWebView: WKUIDelegate {
                     promptHandler = completionHandler
                 }
                 // todo alert
+                completionHandler(nil)
             }
         }
     }
@@ -166,8 +169,11 @@ extension BridgeWebView: WKUIDelegate {
         if isJsDialogBlock == false {
             completionHandler()
         }
-        if bridgeUIDelegate != nil {
-            bridgeUIDelegate?.webView?(webView,
+        
+        if let bridgeUIDelegate = bridgeUIDelegate,
+            bridgeUIDelegate.responds(to: #selector(webView(_:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:))) {
+            
+            bridgeUIDelegate.webView?(webView,
                                        runJavaScriptAlertPanelWithMessage: message,
                                        initiatedByFrame: frame,
                                        completionHandler: completionHandler)
@@ -177,7 +183,7 @@ extension BridgeWebView: WKUIDelegate {
             if isJsDialogBlock {
                 alertHandler = completionHandler
             }
-            // todo alert
+            completionHandler()
         }
     }
     
@@ -238,9 +244,7 @@ extension BridgeWebView {
         guard let nameString = nameStrings.first as? String,
             let JavascriptInterfaceObject = javaScriptNamespaceInterfaces[nameString],
             nameStrings.count > 1,
-            let methodString = nameStrings[1] as? String,
-            let methodOne = JSUtils.methodByName(argNum: 1, selName: methodString, clazz: JavascriptInterfaceObject.self as! AnyClass),
-            let methodTwo = JSUtils.methodByName(argNum: 2, selName: methodString, clazz:  JavascriptInterfaceObject.self as! AnyClass) else {
+            let methodString = nameStrings[1] as? String else {
             
             debugPrint("Js bridge  called, but can't find a corresponded JavascriptObject , please check your code!")
             return JSUtils.objToJsonString(result)
@@ -248,13 +252,16 @@ extension BridgeWebView {
         
         let errorString = String(format: "Error! \n Method %@ is not invoked, since there is not a implementation for it", method)
         
-        let sel = NSSelectorFromString(methodOne)
-        let selasyn = NSSelectorFromString(methodTwo)
+        let methodOne = JSUtils.methodByName(argNum: 1, selName: methodString, clazz: JavascriptInterfaceObject.classForCoder!)
+        let methodTwo = JSUtils.methodByName(argNum: 2, selName: methodString, clazz:  JavascriptInterfaceObject.classForCoder!)
         
-        guard let args = JSUtils.jsonStringToObject(argStr),
-            let arg = args["data"] else {
+        let sel = NSSelectorFromString(methodOne ?? "")
+        let selasyn = NSSelectorFromString(methodTwo ?? "")
+        
+        guard let args = JSUtils.jsonStringToObject(argStr) else {
             return JSUtils.objToJsonString(result)
         }
+        let arg = args["data"]
         
         let cb = args["_dscbstub"] as? String
         
@@ -350,8 +357,8 @@ extension BridgeWebView {
             return false
         }
         
-        let syn = JSUtils.methodByName(argNum: 1, selName: nameString1, clazz: JavascriptInterfaceObject.self as! AnyClass) != nil
-        let asyn = JSUtils.methodByName(argNum: 2, selName: nameString1, clazz: JavascriptInterfaceObject.self as! AnyClass) != nil
+        let syn = JSUtils.methodByName(argNum: 1, selName: nameString1, clazz: JavascriptInterfaceObject.classForCoder!) != nil
+        let asyn = JSUtils.methodByName(argNum: 2, selName: nameString1, clazz: JavascriptInterfaceObject.classForCoder!) != nil
         if ("all" == type && (syn || asyn))
             || ("asyn" == type && asyn)
             || ("syn" == type && syn) {

@@ -11,10 +11,16 @@ import WebKit
 
 class ViewController: UIViewController {
     private(set) var webView: BridgeWebView!
+    let jsbridge = PaylaterJSBridge()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupWebView()
+        addJsBridge()
+    }
+    
+    func addJsBridge() {
+        webView.addJavascriptObject(jsbridge, namespace: "")
     }
 
     private func setupWebView () {

@@ -17,6 +17,7 @@
 		A2766C2C2559387B0005C002 /* BridgeWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2766C2B2559387B0005C002 /* BridgeWebView.swift */; };
 		A2766C2E255939250005C002 /* InternalApis.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2766C2D255939250005C002 /* InternalApis.swift */; };
 		A2766C30255939370005C002 /* JSUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2766C2F255939370005C002 /* JSUtils.swift */; };
+		A2AB94C6256CDC2E004161B7 /* PaylaterJSBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AB94C5256CDC2E004161B7 /* PaylaterJSBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		A2766C2B2559387B0005C002 /* BridgeWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeWebView.swift; sourceTree = "<group>"; };
 		A2766C2D255939250005C002 /* InternalApis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalApis.swift; sourceTree = "<group>"; };
 		A2766C2F255939370005C002 /* JSUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSUtils.swift; sourceTree = "<group>"; };
+		A2AB94C5256CDC2E004161B7 /* PaylaterJSBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaylaterJSBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +69,7 @@
 				A2766C14255936AA0005C002 /* AppDelegate.swift */,
 				A2766C16255936AA0005C002 /* SceneDelegate.swift */,
 				A2766C18255936AA0005C002 /* ViewController.swift */,
+				A2AB94C5256CDC2E004161B7 /* PaylaterJSBridge.swift */,
 				A2766C28255936B40005C002 /* DSBridge */,
 				A2766C1A255936AA0005C002 /* Main.storyboard */,
 				A2766C1D255936AC0005C002 /* Assets.xcassets */,
@@ -163,6 +166,7 @@
 				A2766C2A255938200005C002 /* CallInfo.swift in Sources */,
 				A2766C15255936AA0005C002 /* AppDelegate.swift in Sources */,
 				A2766C17255936AA0005C002 /* SceneDelegate.swift in Sources */,
+				A2AB94C6256CDC2E004161B7 /* PaylaterJSBridge.swift in Sources */,
 				A2766C30255939370005C002 /* JSUtils.swift in Sources */,
 				A2766C2E255939250005C002 /* InternalApis.swift in Sources */,
 			);
