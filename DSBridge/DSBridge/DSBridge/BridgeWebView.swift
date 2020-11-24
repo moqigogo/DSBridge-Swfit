@@ -194,8 +194,9 @@ extension BridgeWebView: WKUIDelegate {
         if isJsDialogBlock == false {
             completionHandler(true)
         }
-        if bridgeUIDelegate != nil {
-            bridgeUIDelegate?.webView?(webView,
+        if let bridgeUIDelegate = bridgeUIDelegate,
+            bridgeUIDelegate.responds(to: #selector(webView(_:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:))) {
+            bridgeUIDelegate.webView?(webView,
                                        runJavaScriptConfirmPanelWithMessage: message,
                                        initiatedByFrame: frame,
                                        completionHandler: completionHandler)
@@ -206,6 +207,7 @@ extension BridgeWebView: WKUIDelegate {
                 confirmHandler = completionHandler
             }
             // todo alert
+            completionHandler(true)
         }
     }
     

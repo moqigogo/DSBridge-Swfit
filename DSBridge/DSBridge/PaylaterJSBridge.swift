@@ -38,4 +38,7 @@ class PaylaterJSBridge: NSObject {
         print("share")
     }
 
+    deinit {
+        print("deinit")
+    }
 }
