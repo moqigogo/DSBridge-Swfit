@@ -8,13 +8,19 @@
 
 import UIKit
 
+enum BridgeMethodTypes {
+    case canCallAsyn
+    case canCallSyn
+    case cantCall
+}
+
 class JSUtils {
-    enum BridgeAPI {
-        case hasNativeMethod
-        case closePage
-        case returnValue
-        case dsinit
-        case disableSafetyAlertBox
+    enum BridgeAPI: String, CaseIterable {
+        case hasNativeMethod = "hasNativeMethod"
+        case closePage = "closePage"
+        case returnValue = "returnValue"
+        case dsinit = "dsinit"
+        case disableSafetyAlertBox = "disableJavascriptDialogBlock"
     }
     
     static func objToJsonString(_ dict: Any) -> String {
@@ -39,52 +45,6 @@ class JSUtils {
         }
         return dict
     }
-    
-    static func allMethodFromClass(_ clazz: AnyClass?) -> [String] {
-        var methods = [String]()
-        var tmpClazz: AnyClass? = clazz
-        while tmpClazz != nil {
-            var count: UInt32 = 0
-            let method = class_copyMethodList(tmpClazz, &count)
-            var i: UInt32 = 0
-            while i < count {
-                let name1 = method_getName((method?[Int(i)])!)
-                let selName = sel_getName(name1)
-                if let strName = String(cString: selName, encoding: .utf8) {
-                    methods.append(strName)
-                }
-                i += 1
-            }
-            free(method)
-            guard let cls = class_getSuperclass(tmpClazz) else {
-                return methods
-            }
-            tmpClazz = NSStringFromClass(cls) == NSStringFromClass(NSObject.self) ? nil : cls
-            
-        }
-        
-        return methods
-    }
-    
-    static func methodByName(argNum: Int, selName: String, clazz: AnyClass) -> String? {
-        var result: String?
-        
-        let array = JSUtils.allMethodFromClass(clazz)
-        
-        for method in array {
-            let tmpArray = method.components(separatedBy: ":")
-            let range = (method as NSString).range(of: ":")
-            if range.length > 0 {
-                let methodName = (method as NSString).substring(with: NSRange(location: 0, length: range.location))
-                if methodName == selName && tmpArray.count == argNum + 1 {
-                    result = method
-                    return result
-                }
-            }
-        }
-        
-        return result
-    }
 
     static func parseNamespace(_ method: String) -> [Any] {
         let range = (method as NSString).range(of: ".", options: .backwards)
@@ -92,9 +52,51 @@ class JSUtils {
         var result = method
         if range.location != NSNotFound {
             namespace = (method as NSString).substring(to: range.location)
-            result = (method as NSString).substring(to: range.location + 1)
+            result = (method as NSString).substring(from: range.location + 1)
         }
         
         return [namespace, result]
+    }
+    
+    static func getCurShowingViewController(base: UIViewController? = UIApplication.shared.currentWindow?.rootViewController) -> UIViewController? {
+        
+        if let nav = base as? UINavigationController {
+            return getCurShowingViewController(base: nav.visibleViewController)
+        }
+        if let tab = base as? UITabBarController {
+            return getCurShowingViewController(base: tab.selectedViewController)
+        }
+        if let presented = base?.presentedViewController {
+            return getCurShowingViewController(base: presented)
+        }
+        if let split = base as? UISplitViewController{
+            return getCurShowingViewController(base: split.presentingViewController)
+        }
+        return base
+    }
+}
+
+extension UIApplication {
+    var currentWindow: UIWindow? {
+        if #available(iOS 13.0, *) {
+            if let window = connectedScenes
+                .filter({$0.activationState == .foregroundActive})
+                .map({$0 as? UIWindowScene})
+                .compactMap({$0})
+                .first?.windows
+                .filter({$0.isKeyWindow}).first{
+                return window
+            }else if let window = UIApplication.shared.delegate?.window{
+                return window
+            }else{
+                return nil
+            }
+        } else {
+            if let window = UIApplication.shared.delegate?.window{
+                return window
+            }else{
+                return nil
+            }
+        }
     }
 }

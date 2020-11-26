@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A204D0AE256E0A4C009DA4B1 /* BridgeWebViewProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A204D0AD256E0A4C009DA4B1 /* BridgeWebViewProtocol.swift */; };
 		A2766C15255936AA0005C002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2766C14255936AA0005C002 /* AppDelegate.swift */; };
 		A2766C17255936AA0005C002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2766C16255936AA0005C002 /* SceneDelegate.swift */; };
 		A2766C19255936AA0005C002 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2766C18255936AA0005C002 /* ViewController.swift */; };
@@ -21,6 +22,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A204D0AD256E0A4C009DA4B1 /* BridgeWebViewProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeWebViewProtocol.swift; sourceTree = "<group>"; };
 		A2766C11255936AA0005C002 /* DSBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DSBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2766C14255936AA0005C002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A2766C16255936AA0005C002 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				A2766C29255938200005C002 /* CallInfo.swift */,
+				A204D0AD256E0A4C009DA4B1 /* BridgeWebViewProtocol.swift */,
 				A2766C2B2559387B0005C002 /* BridgeWebView.swift */,
 				A2766C2D255939250005C002 /* InternalApis.swift */,
 				A2766C2F255939370005C002 /* JSUtils.swift */,
@@ -162,6 +165,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2766C19255936AA0005C002 /* ViewController.swift in Sources */,
+				A204D0AE256E0A4C009DA4B1 /* BridgeWebViewProtocol.swift in Sources */,
 				A2766C2C2559387B0005C002 /* BridgeWebView.swift in Sources */,
 				A2766C2A255938200005C002 /* CallInfo.swift in Sources */,
 				A2766C15255936AA0005C002 /* AppDelegate.swift in Sources */,

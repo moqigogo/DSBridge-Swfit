@@ -15,7 +15,7 @@ class BridgeWebView: WKWebView {
     
     weak var bridgeUIDelegate: WKUIDelegate?
     
-    private var javaScriptNamespaceInterfaces = [String: AnyObject]()
+    private var javaScriptNamespaceInterfaces = [String: BridgeWebViewProtocol]()
     private var handerMap = [AnyHashable: BridgeCompletionHandler]()
     private var callInfoList = [CallInfo]()
     private var dialogTextDic = [String: String]()
@@ -24,12 +24,8 @@ class BridgeWebView: WKWebView {
     private var jsCache = ""
     private var isPending = false
     private var isDebug = false
-    private var dialogType = 0
     private var callID = 0
     private var isJsDialogBlock = true
-    private var alertHandler: (()->Void)?
-    private var confirmHandler: ((Bool) -> Void)?
-    private var promptHandler: ((String?) -> Void)?
     private var javascriptCloseWindowListener: (()->Void)?
     
     override init(frame: CGRect, configuration: WKWebViewConfiguration) {
@@ -75,11 +71,8 @@ class BridgeWebView: WKWebView {
         javascriptCloseWindowListener = callBack
     }
     
-    func addJavascriptObject(_ object: Any?, namespace: String) {
-        guard let object = object else {
-            return
-        }
-        javaScriptNamespaceInterfaces[namespace] = object as AnyObject
+    func addJavascriptObject(_ object: BridgeWebViewProtocol, namespace: String) {
+        javaScriptNamespaceInterfaces[namespace] = object
     }
     
     func removeJavascriptObject(_ namespace: String) {
@@ -152,12 +145,25 @@ extension BridgeWebView: WKUIDelegate {
                                            completionHandler: completionHandler)
                 return
             } else {
-                dialogType = 3
-                if isJsDialogBlock {
-                    promptHandler = completionHandler
+                let alert = UIAlertController(title: prompt, message: nil, preferredStyle: .alert)
+                
+                let cancel = UIAlertAction(title: (dialogTextDic["promptCancelBtn"] != nil) ? dialogTextDic["promptCancelBtn"] : "cancel", style: .cancel) { (_) in
+                    completionHandler("")
                 }
-                // todo alert
-                completionHandler(nil)
+                
+                let ok = UIAlertAction(title: (dialogTextDic["promptOkBtn"] != nil) ? dialogTextDic["promptOkBtn"] : "ok", style: .default) { [weak self] (_) in
+                    guard let self = self else { return }
+                    completionHandler(self.txtName?.text)
+                }
+                
+                alert.addTextField { [weak self] (textField) in
+                    guard let self = self else { return }
+                    self.txtName = textField
+                }
+                
+                alert.addAction(cancel)
+                alert.addAction(ok)
+                JSUtils.getCurShowingViewController()?.present(alert, animated: true, completion: nil)
             }
         }
     }
@@ -179,11 +185,17 @@ extension BridgeWebView: WKUIDelegate {
                                        completionHandler: completionHandler)
             return
         } else {
-            dialogType = 1
-            if isJsDialogBlock {
-                alertHandler = completionHandler
+            
+            let alert = UIAlertController(title: (dialogTextDic["alertTitle"] != nil) ? dialogTextDic["alertTitle"] : "Prompt",
+                message: message,
+                preferredStyle: .alert)
+            
+            let ok = UIAlertAction(title: (dialogTextDic["promptCancelBtn"] != nil) ? dialogTextDic["promptCancelBtn"] : "ok", style: .cancel) { (_) in
+                completionHandler()
             }
-            completionHandler()
+            
+            alert.addAction(ok)
+            JSUtils.getCurShowingViewController()?.present(alert, animated: true, completion: nil)
         }
     }
     
@@ -202,12 +214,26 @@ extension BridgeWebView: WKUIDelegate {
                                        completionHandler: completionHandler)
             return
         } else {
-            dialogType = 2
-            if isJsDialogBlock {
-                confirmHandler = completionHandler
+            let alert = UIAlertController(title: (dialogTextDic["confirmTitle"] != nil) ? dialogTextDic["confirmTitle"] : "Prompt",
+                                          message: message,
+                                          preferredStyle: .alert)
+            
+            let cancel = UIAlertAction(title: (dialogTextDic["confirmCancelBtn"] != nil) ? dialogTextDic["confirmCancelBtn"] : "cancel", style: .cancel) { (_) in
+                completionHandler(false)
             }
-            // todo alert
-            completionHandler(true)
+            
+            let ok = UIAlertAction(title: (dialogTextDic["confirmOkBtn"] != nil) ? dialogTextDic["confirmOkBtn"] : "ok", style: .default) { (_) in
+                completionHandler(true)
+            }
+            
+            alert.addTextField { [weak self] (textField) in
+                guard let self = self else { return }
+                self.txtName = textField
+            }
+            
+            alert.addAction(cancel)
+            alert.addAction(ok)
+            JSUtils.getCurShowingViewController()?.present(alert, animated: true, completion: nil)
         }
     }
     
@@ -254,12 +280,6 @@ extension BridgeWebView {
         
         let errorString = String(format: "Error! \n Method %@ is not invoked, since there is not a implementation for it", method)
         
-        let methodOne = JSUtils.methodByName(argNum: 1, selName: methodString, clazz: JavascriptInterfaceObject.classForCoder!)
-        let methodTwo = JSUtils.methodByName(argNum: 2, selName: methodString, clazz:  JavascriptInterfaceObject.classForCoder!)
-        
-        let sel = NSSelectorFromString(methodOne ?? "")
-        let selasyn = NSSelectorFromString(methodTwo ?? "")
-        
         guard let args = JSUtils.jsonStringToObject(argStr) else {
             return JSUtils.objToJsonString(result)
         }
@@ -268,8 +288,8 @@ extension BridgeWebView {
         let cb = args["_dscbstub"] as? String
         
         repeat {
-            if cb != nil {
-                if JavascriptInterfaceObject.responds(to: selasyn) {
+            if JavascriptInterfaceObject.checkMethodType(methodString) != .cantCall {
+                if cb != nil {
                     let completionHandler: (Any?, Bool)->() = { value, complete in
                         var del = ""
                         result["code"] = 0
@@ -281,9 +301,9 @@ extension BridgeWebView {
                         if complete {
                             del = "delete window." + cb!
                         }
-                        let js = String(format: "try {%@(JSON.parse(decodeURIComponent(\"%@\")).data);%@; } catch(e){};", cb!, ((value as? String) ?? ""), del)
+                        let js = String(format: "try {%@(JSON.parse(decodeURIComponent(\"%@\")).data);%@; } catch(e){};", cb!, value1, del)
                         objc_sync_enter(self)
-                        
+
                         let t = Date().timeIntervalSince1970 * 1000
                         self.jsCache = self.jsCache + js
                         if t - self.lastCallTime < 50 {
@@ -296,18 +316,16 @@ extension BridgeWebView {
                         }
                         objc_sync_exit(self)
                     }
-                    
-                    // todo
-                    _ = JavascriptInterfaceObject.perform(selasyn, with: arg, with: completionHandler)
+                    _ = JavascriptInterfaceObject.handleMethod(methodString, arg: arg, completionHandler: completionHandler)
+                    break
+                } else {
+                    let ret = JavascriptInterfaceObject.handleMethod(methodString, arg: arg, completionHandler: nil)
+                    result["code"] = 0
+                    if ret != nil {
+                        result["data"] = ret!
+                    }
                     break
                 }
-            } else if JavascriptInterfaceObject.responds(to: sel) {
-                let ret = JavascriptInterfaceObject.perform(sel, with: arg)
-                result["code"] = 0
-                if ret != nil {
-                    result["data"] = ret!.takeRetainedValue()
-                }
-                break
             }
             var js = errorString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             if isDebug {
@@ -355,12 +373,12 @@ extension BridgeWebView {
             return false
         }
         
-        guard let nameString1 = nameStrings[1] as? String else {
+        guard let methodString = nameStrings[1] as? String else {
             return false
         }
         
-        let syn = JSUtils.methodByName(argNum: 1, selName: nameString1, clazz: JavascriptInterfaceObject.classForCoder!) != nil
-        let asyn = JSUtils.methodByName(argNum: 2, selName: nameString1, clazz: JavascriptInterfaceObject.classForCoder!) != nil
+        let syn = JavascriptInterfaceObject.checkMethodType(methodString) == .canCallSyn
+        let asyn = JavascriptInterfaceObject.checkMethodType(methodString) == .canCallAsyn
         if ("all" == type && (syn || asyn))
             || ("asyn" == type && asyn)
             || ("syn" == type && syn) {

@@ -8,7 +8,7 @@
 
 import UIKit
 
-class InternalApis: NSObject {
+class InternalApis {
     weak var webView: BridgeWebView?
     
     func hasNativeMethod(args: [String: Any]?) -> Any {
@@ -29,5 +29,39 @@ class InternalApis: NSObject {
     
     func disableJavascriptDialogBlock(args: [String: Any]?) -> Any {
         return webView?.onMessage(args, type: .disableSafetyAlertBox) as Any
+    }
+}
+
+extension InternalApis: BridgeWebViewProtocol {
+    func checkMethodType(_ method: String) -> BridgeMethodTypes {
+        guard let method = JSUtils.BridgeAPI(rawValue: method) else {
+            return .cantCall
+        }
+        switch method {
+        case .closePage,
+             .hasNativeMethod,
+             .returnValue,
+             .disableSafetyAlertBox,
+             .dsinit:
+            return.canCallSyn
+        }
+    }
+    
+    func handleMethod(_ method: String, arg: Any?, completionHandler: ((Any?, Bool) -> Void)?) -> Any? {
+        guard let method = JSUtils.BridgeAPI(rawValue: method) else {
+            return nil
+        }
+        switch method {
+        case .closePage:
+            return closePage(args: arg as? [String: Any])
+        case .hasNativeMethod:
+            return hasNativeMethod(args: arg as? [String: Any])
+        case .returnValue:
+            return returnValue(args: arg as? [String: Any])
+        case .dsinit:
+            return dsinit(args: arg as? [String: Any])
+        case .disableSafetyAlertBox:
+            return disableJavascriptDialogBlock(args: arg as? [String: Any])
+        }
     }
 }
