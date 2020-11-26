@@ -57,6 +57,16 @@ class ViewController: UIViewController {
 //        webView.scrollView.contentInsetAdjustmentBehavior = .never
         view.addSubview(webView)
         webView.frame = view.bounds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            self.callJsGoBackAction()
+        }
+    }
+    
+    
+    func callJsGoBackAction() {
+        webView.callHandler(methodName: "goBack", arguments: nil) { (isGoBack, isComplete) in
+            print(isGoBack as Any, isComplete)
+        }
     }
 }
 
