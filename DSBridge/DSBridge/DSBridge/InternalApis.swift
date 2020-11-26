@@ -47,7 +47,7 @@ extension InternalApis: BridgeWebViewProtocol {
         }
     }
     
-    func handleMethod(_ method: String, arg: Any?, completionHandler: ((Any?, Bool) -> Void)?) -> Any? {
+    func handleMethod(_ method: String, arg: Any?, completionHandler: BridgeWebView.BridgeCompletionHandler?) -> Any? {
         guard let method = JSUtils.BridgeAPI(rawValue: method) else {
             return nil
         }

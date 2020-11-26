@@ -27,26 +27,26 @@ class PaylaterJSBridge {
         print("loadCompleted")
     }
     
-    @objc func deviceInfo(_ arg: Any?, handler: (Dictionary<String, Any>)->Void) {
+    @objc func deviceInfo(_ arg: Any?, handler: BridgeWebView.BridgeCompletionHandler?) {
         print("deviceInfo")
-        handler(["sdasdas": "hahahah"])
+        handler?(["sdasdas": "hahahah"], true)
     }
     
-    @objc func mediaQuery(_ arg: Any?, handler: (Dictionary<String, Any>)->Void) {
+    @objc func mediaQuery(_ arg: Any?, handler: BridgeWebView.BridgeCompletionHandler?) {
         print("mediaQuery")
-        handler(["sdasdas": "hahahah"])
+        handler?(["sdasdas": "hahahah"], true)
     }
     
     @objc func goBack(_ arg: Any?) {
         print("goBack")
     }
     
-    @objc func setBackHook(_ arg: Any?, handler: (Dictionary<String, Any>)->Void) {
+    @objc func setBackHook(_ arg: Any?, handler: BridgeWebView.BridgeCompletionHandler?) {
         print("setBackHook")
-        handler(["sdasdas": "hahahah"])
+        handler?(["sdasdas": "hahahah"], true)
     }
     
-    @objc func share(_ arg: Any?, handler: (Any?, Error?) -> Void) {
+    @objc func share(_ arg: Any?, handler: BridgeWebView.BridgeCompletionHandler?) {
         print("share")
     }
 }
@@ -69,7 +69,7 @@ extension PaylaterJSBridge: BridgeWebViewProtocol {
         }
     }
     
-    func handleMethod(_ method: String, arg: Any?, completionHandler: ((Any?, Bool) -> Void)?) -> Any? {
+    func handleMethod(_ method: String, arg: Any?, completionHandler: BridgeWebView.BridgeCompletionHandler?) -> Any? {
         guard let method = PaylaterJSBridgeMethods(rawValue: method) else {
             return nil
         }
@@ -79,23 +79,15 @@ extension PaylaterJSBridge: BridgeWebViewProtocol {
         case .loadCompleted:
             loadCompleted(arg as? [String: Any])
         case .deviceInfo:
-            deviceInfo(arg as? [String: Any]) { (value) in
-                completionHandler?(value, true)
-            }
+            deviceInfo(arg as? [String: Any], handler: completionHandler)
         case .mediaQuery:
-            mediaQuery(arg as? [String: Any]) { (value) in
-                completionHandler?(value, true)
-            }
+            mediaQuery(arg as? [String: Any], handler: completionHandler)
         case .goBack:
             goBack(arg as? [String: Any])
         case .setBackHook:
-            setBackHook(arg as? [String: Any]) { (value) in
-                completionHandler?(value, true)
-            }
+            setBackHook(arg as? [String: Any], handler: completionHandler)
         case .share:
-            share(arg) { (value, error) in
-                completionHandler?(value, true)
-            }
+            share(arg as? [String: Any], handler: completionHandler)
         }
         return nil
     }

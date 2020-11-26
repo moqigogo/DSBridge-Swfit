@@ -10,7 +10,8 @@ import UIKit
 
 protocol BridgeWebViewProtocol {
     
-    func handleMethod(_ method: String, arg: Any?, completionHandler: ((Any?, Bool)->Void)?) -> Any?
+    @discardableResult
+    func handleMethod(_ method: String, arg: Any?, completionHandler: BridgeWebView.BridgeCompletionHandler?) -> Any?
     
     func checkMethodType(_ method: String) -> BridgeMethodTypes
 }

@@ -11,7 +11,7 @@ import WebKit
 
 class BridgeWebView: WKWebView {
     typealias JSCallback = (_ result: String, _ complete: Bool)->Void
-    typealias BridgeCompletionHandler = (_ value: Any)->Void
+    typealias BridgeCompletionHandler = (Any?, Bool)->Void
     
     weak var bridgeUIDelegate: WKUIDelegate?
     
@@ -80,7 +80,7 @@ class BridgeWebView: WKWebView {
     }
     
     func hasJavascriptMethod(_ handlerName: String, methodExistCallback: @escaping ((_ exist: Bool)->Void)) {
-        callHandler(methodName: "_hasJavascriptMethod", arguments: [handlerName]) { (value) in
+        callHandler(methodName: "_hasJavascriptMethod", arguments: [handlerName]) { (value, _) in
             methodExistCallback((value as? Bool) ?? false)
         }
     }
@@ -290,7 +290,7 @@ extension BridgeWebView {
         repeat {
             if JavascriptInterfaceObject.checkMethodType(methodString) != .cantCall {
                 if cb != nil {
-                    let completionHandler: (Any?, Bool)->() = { value, complete in
+                    let completionHandler: BridgeCompletionHandler = { value, complete in
                         var del = ""
                         result["code"] = 0
                         if value != nil {
@@ -316,7 +316,7 @@ extension BridgeWebView {
                         }
                         objc_sync_exit(self)
                     }
-                    _ = JavascriptInterfaceObject.handleMethod(methodString, arg: arg, completionHandler: completionHandler)
+                    JavascriptInterfaceObject.handleMethod(methodString, arg: arg, completionHandler: completionHandler)
                     break
                 } else {
                     let ret = JavascriptInterfaceObject.handleMethod(methodString, arg: arg, completionHandler: nil)
@@ -398,7 +398,7 @@ extension BridgeWebView {
             let completionHandler = handerMap[argsID] else {
             return nil
         }
-        completionHandler(args?["data"] as Any)
+        completionHandler(args?["data"] as Any, args?["complete"] as? Bool ?? false)
         if let isComplete = args?["complete"] as? Bool,
             isComplete {
             handerMap.removeValue(forKey: argsID)
